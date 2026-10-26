@@ -1,0 +1,111 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_CHIP_MBV
+
+comment "AMD MicroBlaze V Options"
+
+menu "MicroBlaze V ISA extensions"
+
+comment "These must match the MicroBlaze V configuration in Vivado"
+
+config MBV_ISA_M
+	bool "M: Integer multiplication and division"
+	default y
+	select ARCH_RV_ISA_M
+
+config MBV_ISA_A
+	bool "A: Atomic instructions"
+	default y
+	select ARCH_RV_ISA_A
+
+config MBV_ISA_C
+	bool "C: Compressed instructions"
+	default y
+	select ARCH_RV_ISA_C
+
+config MBV_ISA_F
+	bool "F: Single-precision floating point"
+	default n
+	select ARCH_HAVE_FPU
+	---help---
+		Select this if the core was generated with the floating point
+		unit enabled.  This makes ARCH_FPU available, which switches the
+		ABI to ilp32f and saves/restores the FP registers on context
+		switch.
+
+endmenu # MicroBlaze V ISA extensions
+
+menu "AXI Interrupt Controller"
+
+config MBV_INTC_BASE
+	hex "AXI INTC base address"
+	default 0x41200000
+	---help---
+		Base address of the AXI INTC (PG099) whose output drives the
+		MicroBlaze V machine external interrupt (MEIP).
+
+config MBV_INTC_NIRQS
+	int "Number of AXI INTC interrupt inputs"
+	default 32
+	range 1 32
+	---help---
+		Number of interrupt inputs of the AXI INTC (C_NUM_INTR_INPUTS).
+		AXI INTC input n is NuttX IRQ RISCV_IRQ_EXT + n, so NR_IRQS is
+		RISCV_IRQ_EXT + MBV_INTC_NIRQS.
+
+config MBV_INTC_EDGE_MASK
+	hex "AXI INTC edge-triggered inputs mask"
+	default 0x00000002
+	---help---
+		Bit n set means that AXI INTC input n is edge triggered
+		(C_KIND_OF_INTR).  Edge-triggered inputs are acknowledged in IAR
+		before their handler runs so that a new edge arriving during the
+		handler is not lost.  Level-triggered inputs are acknowledged
+		after the handler has cleared the request at the source.
+
+		The default matches the QEMU amd-microblaze-v-generic machine,
+		where only the AXI UART Lite on input 1 is edge triggered.
+
+config MBV_INTC_HAS_IVR
+	bool "AXI INTC has the Interrupt Vector Register (C_HAS_IVR)"
+	default y
+	---help---
+		If disabled, the pending interrupt is found by scanning IPR.
+
+config MBV_INTC_HAS_SIE_CIE
+	bool "AXI INTC has SIE/CIE registers (C_HAS_SIE, C_HAS_CIE)"
+	default y
+	---help---
+		If disabled, IER is updated with a read-modify-write sequence
+		inside a critical section.
+
+endmenu # AXI Interrupt Controller
+
+menu "AXI Timer (system tick)"
+
+config MBV_TIMER_BASE
+	hex "AXI Timer base address"
+	default 0x41c00000
+	---help---
+		Base address of the AXI Timer (PG079) used for the system tick.
+		Counter 0 generates the tick, counter 1 is left untouched.
+
+config MBV_TIMER_IRQ
+	int "AXI Timer AXI INTC input"
+	default 0
+	range 0 31
+	---help---
+		AXI INTC input the AXI Timer interrupt is connected to.
+
+config MBV_TIMER_CLK_FREQ
+	int "AXI Timer clock frequency (Hz)"
+	default 100000000
+	---help---
+		Frequency of the AXI Timer clock (s_axi_aclk).
+
+endmenu # AXI Timer (system tick)
+
+endif # ARCH_CHIP_MBV

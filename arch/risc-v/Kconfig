@@ -561,6 +561,16 @@ config ARCH_CHIP_RP23XX_RV
 	---help---
 		Raspberry Pi RP23XX architectures (RISC-V dual Hazard3).
 
+config ARCH_CHIP_MBV
+	bool "AMD MicroBlaze V"
+	select ARCH_RV32
+	---help---
+		AMD MicroBlaze V soft processor (RV32I + Zicsr + Zifencei with
+		optional M/A/C/F extensions selected in Vivado).  Interrupts are
+		delivered through an AXI Interrupt Controller (AXI INTC) on the
+		machine external interrupt line and the system tick comes from an
+		AXI Timer.  There is no CLINT/PLIC and no mtime/mtimecmp.
+
 config ARCH_CHIP_RISCV_CUSTOM
 	bool "Custom RISC-V chip"
 	select ARCH_CHIP_CUSTOM
@@ -752,6 +762,7 @@ config ARCH_CHIP
 	default "allwinner-d1"          if ARCH_CHIP_ALLWINNER_D1
 	default "eic7700x"              if ARCH_CHIP_EIC7700X
 	default "rp23xx-rv"             if ARCH_CHIP_RP23XX_RV
+	default "mbv"                   if ARCH_CHIP_MBV
 
 config ARCH_RISCV_INTXCPT_EXTENSIONS
 	bool "RISC-V Integer Context Extensions"
@@ -1033,6 +1044,9 @@ source "arch/risc-v/src/rv32m1/Kconfig"
 endif
 if ARCH_CHIP_QEMU_RV
 source "arch/risc-v/src/qemu-rv/Kconfig"
+endif
+if ARCH_CHIP_MBV
+source "arch/risc-v/src/mbv/Kconfig"
 endif
 if ARCH_CHIP_HPM6000
 source "arch/risc-v/src/hpm6000/Kconfig"
