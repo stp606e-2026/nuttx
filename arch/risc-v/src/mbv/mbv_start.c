@@ -30,6 +30,7 @@
 
 #include <nuttx/init.h>
 #include <nuttx/arch.h>
+#include <nuttx/serial/uart_16550.h>
 #include <arch/board/board.h>
 
 #include "riscv_internal.h"
@@ -42,6 +43,12 @@
 #if !defined(CONFIG_BUILD_FLAT) || defined(CONFIG_SMP) || \
     defined(CONFIG_ARCH_USE_S_MODE)
 #  error "MicroBlaze V only supports the flat, single hart, M-mode build"
+#endif
+
+#ifdef CONFIG_DEBUG_FEATURES
+#  define showprogress(c) up_putc(c)
+#else
+#  define showprogress(c)
 #endif
 
 /****************************************************************************
@@ -90,6 +97,18 @@ void mbv_start(void)
 
   mbv_clear_bss();
 
+  /* The 16550 up_putc() works by polling, so this is visible even before
+   * the serial driver and the interrupt controller are initialized.
+   */
+
+  showprogress('A');
+
+#ifdef USE_EARLYSERIALINIT
+  riscv_earlyserialinit();
+#endif
+
+  showprogress('B');
+
   /* Call nx_start() */
 
   nx_start();
@@ -100,4 +119,26 @@ void mbv_start(void)
     {
       asm("WFI");
     }
+}
+
+/****************************************************************************
+ * Name: riscv_earlyserialinit
+ ****************************************************************************/
+
+void riscv_earlyserialinit(void)
+{
+#ifdef CONFIG_16550_UART
+  u16550_earlyserialinit();
+#endif
+}
+
+/****************************************************************************
+ * Name: riscv_serialinit
+ ****************************************************************************/
+
+void riscv_serialinit(void)
+{
+#ifdef CONFIG_16550_UART
+  u16550_serialinit();
+#endif
 }
