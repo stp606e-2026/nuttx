@@ -18,7 +18,7 @@ IP                     Base          INTC in    NuttX
 LMB BRAM (128 KiB)     0x00000000    \-         Not used
 DDR (``-m``)           0x80000000    \-         Code, data, heap
 AXI INTC               0x41200000    \-         Output to MEIP
-AXI Timer #1           0x41c00000    0          System tick (counter 0)
+AXI Timer #1           0x41c00000    0          System tick (counters 0, 1)
 AXI UART Lite          0x40600000    1 (edge)   Not supported
 AXI UART16550          0x44a11000    4          Console
 AXI EthernetLite       0x40e00000    5          Not supported
@@ -114,9 +114,12 @@ Known Issues
 
 The QEMU AXI Timer model restarts the period relative to the moment its
 host timer callback runs.  On hosts with coarse timers (observed on macOS)
-the tick is therefore late by the host timer latency on every period, and
-``sleep 5`` takes about 6 seconds.  This is a QEMU artifact; the guest
-programs the timer correctly and the real AXI Timer reloads in hardware.
+every tick interrupt is therefore late by the host timer latency, about
+80 instead of 100 interrupts per second.  ``CONFIG_MBV_TIMER_TICK_CATCHUP``
+compensates for this using counter 1 as the time reference, so the system
+time and ``sleep`` stay correct (``sleep 5`` takes 5 seconds), but
+``/proc/irqs`` shows the lower interrupt rate of the timer.  Without that
+option ``sleep 5`` takes about 6 seconds on such hosts.
 
 Real Hardware
 =============

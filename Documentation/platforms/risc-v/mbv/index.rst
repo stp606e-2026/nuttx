@@ -46,7 +46,7 @@ Peripherals
 Peripheral         Support    Notes
 =================  =========  ====================================================
 AXI INTC (PG099)   Yes        Chip layer, drives MEIP
-AXI Timer (PG079)  Yes        Counter 0: system tick, counter 1: unused
+AXI Timer (PG079)  Yes        Counter 0: tick IRQ, counter 1: time reference
 AXI UART16550      Yes        Generic ``drivers/serial/uart_16550.c``
 AXI UART Lite      No
 AXI GPIO           No
@@ -85,28 +85,37 @@ Counter 0 of the AXI Timer runs in generate mode, counting down with auto
 reload.  The period of a down counter is ``TLR + 2`` clocks, so
 ``TLR = CONFIG_MBV_TIMER_CLK_FREQ / TICK_PER_SEC - 2``.  The timer interrupt
 is level triggered; the handler writes 1 to T0INT before returning.
-``CONFIG_MBV_TIMER_CLK_FREQ`` sh   ould be a multiple of the tick rate,
+``CONFIG_MBV_TIMER_CLK_FREQ`` should be a multiple of the tick rate,
 otherwise the tick is slightly off (a build warning is emitted).
+
+With ``CONFIG_MBV_TIMER_TICK_CATCHUP`` (default), counter 1 of the same AXI
+Timer runs as a free running up counter without interrupt and is the time
+reference.  On each counter 0 interrupt, one tick is processed for every
+tick period that has elapsed on counter 1, so a tick interrupt delayed by
+more than one period (or lost) does not slow down the system time.  On
+real hardware this processes exactly one tick per interrupt.  Disable it
+if the AXI Timer has a single counter (``C_ONE_TIMER_ONLY``).
 
 Kconfig Options
 ===============
 
-=================================  ============  ==============================================
-Option                             Default       Description
-=================================  ============  ==============================================
-``CONFIG_MBV_ISA_M``               y             M extension
-``CONFIG_MBV_ISA_A``               y             A extension
-``CONFIG_MBV_ISA_C``               y             C extension
-``CONFIG_MBV_ISA_F``               n             F extension (enables ``ARCH_HAVE_FPU``)
-``CONFIG_MBV_INTC_BASE``           0x41200000    AXI INTC base address
-``CONFIG_MBV_INTC_NIRQS``          32            AXI INTC inputs (``C_NUM_INTR_INPUTS``)
-``CONFIG_MBV_INTC_EDGE_MASK``      0x00000002    Edge-triggered inputs (``C_KIND_OF_INTR``)
-``CONFIG_MBV_INTC_HAS_IVR``        y             ``C_HAS_IVR``; otherwise IPR is scanned
-``CONFIG_MBV_INTC_HAS_SIE_CIE``    y             ``C_HAS_SIE``/``C_HAS_CIE``; otherwise IER RMW
-``CONFIG_MBV_TIMER_BASE``          0x41c00000    AXI Timer used for the tick
-``CONFIG_MBV_TIMER_IRQ``           0             AXI INTC input of that timer
-``CONFIG_MBV_TIMER_CLK_FREQ``      100000000     AXI Timer clock (``s_axi_aclk``)
-=================================  ============  ==============================================
+===================================  ============  ==============================================
+Option                               Default       Description
+===================================  ============  ==============================================
+``CONFIG_MBV_ISA_M``                 y             M extension
+``CONFIG_MBV_ISA_A``                 y             A extension
+``CONFIG_MBV_ISA_C``                 y             C extension
+``CONFIG_MBV_ISA_F``                 n             F extension (enables ``ARCH_HAVE_FPU``)
+``CONFIG_MBV_INTC_BASE``             0x41200000    AXI INTC base address
+``CONFIG_MBV_INTC_NIRQS``            32            AXI INTC inputs (``C_NUM_INTR_INPUTS``)
+``CONFIG_MBV_INTC_EDGE_MASK``        0x00000002    Edge-triggered inputs (``C_KIND_OF_INTR``)
+``CONFIG_MBV_INTC_HAS_IVR``          y             ``C_HAS_IVR``; otherwise IPR is scanned
+``CONFIG_MBV_INTC_HAS_SIE_CIE``      y             ``C_HAS_SIE``/``C_HAS_CIE``; otherwise IER RMW
+``CONFIG_MBV_TIMER_BASE``            0x41c00000    AXI Timer used for the tick
+``CONFIG_MBV_TIMER_IRQ``             0             AXI INTC input of that timer
+``CONFIG_MBV_TIMER_CLK_FREQ``        100000000     AXI Timer clock (``s_axi_aclk``)
+``CONFIG_MBV_TIMER_TICK_CATCHUP``    y             Counter 1 as time reference (lost ticks)
+===================================  ============  ==============================================
 
 The defaults are the Vivado address editor defaults, which are also used by
 the QEMU ``amd-microblaze-v-generic`` machine.

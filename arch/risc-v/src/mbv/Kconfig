@@ -91,7 +91,8 @@ config MBV_TIMER_BASE
 	default 0x41c00000
 	---help---
 		Base address of the AXI Timer (PG079) used for the system tick.
-		Counter 0 generates the tick, counter 1 is left untouched.
+		Counter 0 generates the tick interrupt.  Counter 1 is used as a
+		free running reference if MBV_TIMER_TICK_CATCHUP is enabled.
 
 config MBV_TIMER_IRQ
 	int "AXI Timer AXI INTC input"
@@ -105,6 +106,21 @@ config MBV_TIMER_CLK_FREQ
 	default 100000000
 	---help---
 		Frequency of the AXI Timer clock (s_axi_aclk).
+
+config MBV_TIMER_TICK_CATCHUP
+	bool "Compensate lost ticks with AXI Timer counter 1"
+	default y
+	---help---
+		Run counter 1 of the system tick AXI Timer as a free running up
+		counter (no interrupt) and use it as the time reference: on each
+		counter 0 interrupt, one system tick is processed for every tick
+		period that has elapsed on counter 1.  This keeps the system time
+		correct when tick interrupts are delayed by more than one period
+		or are lost, e.g. on QEMU whose AXI Timer model re-arms the period
+		late on hosts with coarse timers.
+
+		Disable this if the AXI Timer is configured with a single counter
+		(C_ONE_TIMER_ONLY) or counter 1 is needed elsewhere.
 
 endmenu # AXI Timer (system tick)
 
