@@ -2600,6 +2600,14 @@ config ARCH_BOARD_QEMU_RV_VIRT
 		This is the board configuration for the port of NuttX to the
 		QEMU RV32 Virt board. This board features the QEMU RV32 CPU.
 
+config ARCH_BOARD_MBV_QEMU
+	bool "AMD MicroBlaze V on QEMU"
+	depends on ARCH_CHIP_MBV
+	---help---
+		This is the board configuration for the AMD MicroBlaze V soft
+		processor running on the QEMU amd-microblaze-v-generic machine
+		(AXI INTC, AXI Timer, AXI UART16550 console, DDR at 0x80000000).
+
 config ARCH_BOARD_JH7110_STAR64
 	bool "PINE64 Star64"
 	depends on ARCH_CHIP_JH7110
@@ -4373,6 +4381,7 @@ config ARCH_BOARD
 	default "rtl8721f_evb"                 if ARCH_BOARD_RTL8721F_EVB
 	default "rv32m1-vega"                  if ARCH_BOARD_RV32M1_VEGA
 	default "rv-virt"                      if ARCH_BOARD_QEMU_RV_VIRT
+	default "mbv-qemu"                     if ARCH_BOARD_MBV_QEMU
 	default "star64"                       if ARCH_BOARD_JH7110_STAR64
 	default "canmv230"                     if ARCH_BOARD_K230_CANMV
 	default "ox64"                         if ARCH_BOARD_BL808_OX64
@@ -5526,6 +5535,9 @@ source "boards/risc-v/rv32m1/rv32m1-vega/Kconfig"
 endif
 if ARCH_BOARD_QEMU_RV_VIRT
 source "boards/risc-v/qemu-rv/rv-virt/Kconfig"
+endif
+if ARCH_BOARD_MBV_QEMU
+source "boards/risc-v/mbv/mbv-qemu/Kconfig"
 endif
 if ARCH_BOARD_JH7110_STAR64
 source "boards/risc-v/jh7110/star64/Kconfig"
