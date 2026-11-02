@@ -35,6 +35,7 @@
 
 #include "riscv_internal.h"
 #include "chip.h"
+#include "mbv_uartlite.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -97,8 +98,9 @@ void mbv_start(void)
 
   mbv_clear_bss();
 
-  /* The 16550 up_putc() works by polling, so this is visible even before
-   * the serial driver and the interrupt controller are initialized.
+  /* The 16550 and AXI UART Lite up_putc() work by polling, so this is
+   * visible even before the serial driver and the interrupt controller are
+   * initialized.
    */
 
   showprogress('A');
@@ -130,6 +132,9 @@ void riscv_earlyserialinit(void)
 #ifdef CONFIG_16550_UART
   u16550_earlyserialinit();
 #endif
+#ifdef CONFIG_MBV_UARTLITE0
+  mbv_uartlite_earlyserialinit();
+#endif
 }
 
 /****************************************************************************
@@ -140,6 +145,9 @@ void riscv_serialinit(void)
 {
 #ifdef CONFIG_16550_UART
   u16550_serialinit();
+#endif
+#ifdef CONFIG_MBV_UARTLITE0
+  mbv_uartlite_serialinit();
 #endif
 }
 

@@ -32,6 +32,10 @@ HEAD_ASRC = mbv_head.S
 CHIP_CSRCS  = mbv_start.c mbv_irq.c mbv_irq_dispatch.c
 CHIP_CSRCS += mbv_timerisr.c
 
+ifeq ($(CONFIG_MBV_UARTLITE0),y)
+CHIP_CSRCS += mbv_uartlite.c
+endif
+
 ifeq ($(CONFIG_MBV_SPI0),y)
 CHIP_CSRCS += mbv_spi.c
 endif

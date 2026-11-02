@@ -124,6 +124,96 @@ config MBV_TIMER_TICK_CATCHUP
 
 endmenu # AXI Timer (system tick)
 
+menu "AXI UART Lite"
+
+config MBV_UARTLITE0
+	bool "AXI UART Lite 0"
+	default n
+	select ARCH_HAVE_SERIAL_TERMIOS
+	---help---
+		Enable the serial driver for an AXI UART Lite (PG142).  RX and TX
+		are interrupt driven.  The port is registered as /dev/ttyS0, or
+		as /dev/ttyUL0 if the 16550 driver is enabled as well, and as
+		/dev/console if it is selected as the serial console.
+
+if MBV_UARTLITE0
+
+config MBV_UARTLITE0_BASE
+	hex "AXI UART Lite 0 base address"
+	default 0x40600000
+
+config MBV_UARTLITE0_IRQ
+	int "AXI UART Lite 0 AXI INTC input"
+	default 1
+	range 0 31
+	---help---
+		AXI INTC input the UART Lite interrupt is connected to.  The
+		interrupt is a rising edge: the input must be set in
+		MBV_INTC_EDGE_MASK.
+
+config MBV_UARTLITE0_BAUD
+	int "AXI UART Lite 0 baud rate"
+	default 115200
+	---help---
+		Baud rate the core was generated with (C_BAUDRATE).  It cannot be
+		changed by software and is only reported by TCGETS.
+
+config MBV_UARTLITE0_BITS
+	int "AXI UART Lite 0 data bits"
+	default 8
+	range 5 8
+	---help---
+		Data bits the core was generated with (C_DATA_BITS).  Only
+		reported by TCGETS.
+
+config MBV_UARTLITE0_PARITY
+	int "AXI UART Lite 0 parity (0=none, 1=odd, 2=even)"
+	default 0
+	range 0 2
+	---help---
+		Parity the core was generated with (C_USE_PARITY, C_ODD_PARITY).
+		Only reported by TCGETS.
+
+config MBV_UARTLITE0_RXBUFSIZE
+	int "AXI UART Lite 0 receive buffer size"
+	default 256
+
+config MBV_UARTLITE0_TXBUFSIZE
+	int "AXI UART Lite 0 transmit buffer size"
+	default 256
+
+endif # MBV_UARTLITE0
+
+endmenu # AXI UART Lite
+
+choice
+	prompt "Serial console"
+	default MBV_16550_SERIAL_CONSOLE if 16550_UART && !16550_NO_SERIAL_CONSOLE
+	default MBV_UARTLITE0_SERIAL_CONSOLE if MBV_UARTLITE0
+	default MBV_NO_SERIAL_CONSOLE
+	depends on DEV_CONSOLE
+	---help---
+		The AXI UART16550 and the AXI UART Lite cannot both be the
+		console.  The 16550 console is selected under "16550 Serial
+		Console" in the 16550 driver options.  Set that to "No 16550
+		serial console" to make the AXI UART Lite the console.
+
+config MBV_16550_SERIAL_CONSOLE
+	bool "AXI UART16550"
+	depends on 16550_UART && !16550_NO_SERIAL_CONSOLE
+
+config MBV_UARTLITE0_SERIAL_CONSOLE
+	bool "AXI UART Lite 0"
+	depends on MBV_UARTLITE0
+	depends on !16550_UART || 16550_NO_SERIAL_CONSOLE
+	select SERIAL_CONSOLE
+
+config MBV_NO_SERIAL_CONSOLE
+	bool "No serial console"
+	depends on !16550_UART || 16550_NO_SERIAL_CONSOLE
+
+endchoice # Serial console
+
 menu "AXI Quad SPI"
 
 config MBV_SPI0

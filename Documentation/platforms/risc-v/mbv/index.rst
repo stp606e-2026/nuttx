@@ -48,7 +48,7 @@ Peripheral         Support    Notes
 AXI INTC (PG099)   Yes        Chip layer, drives MEIP
 AXI Timer (PG079)  Yes        Counter 0: tick IRQ, counter 1: time reference
 AXI UART16550      Yes        Generic ``drivers/serial/uart_16550.c``
-AXI UART Lite      No
+AXI UART Lite      Yes        Serial driver, RX/TX interrupt driven, console
 AXI GPIO           No
 AXI Quad SPI       Yes        SPI master, standard mode, 8 bit, polled
 AXI IIC            No
@@ -95,6 +95,35 @@ tick period that has elapsed on counter 1, so a tick interrupt delayed by
 more than one period (or lost) does not slow down the system time.  On
 real hardware this processes exactly one tick per interrupt.  Disable it
 if the AXI Timer has a single counter (``C_ONE_TIMER_ONLY``).
+
+AXI UART Lite
+=============
+
+``CONFIG_MBV_UARTLITE0`` enables the serial driver for an AXI UART Lite
+(PG142).  The port is ``/dev/ttyS0``, or ``/dev/ttyUL0`` if the 16550
+driver is enabled as well (it names its first port ``/dev/ttyS0`` too).
+
+- **Console:** the "Serial console" choice in the MicroBlaze V options
+  selects the AXI UART16550 or the AXI UART Lite
+  (``CONFIG_MBV_UARTLITE0_SERIAL_CONSOLE``).  The UART Lite can only be
+  chosen when the 16550 driver has no console
+  (``CONFIG_16550_NO_SERIAL_CONSOLE``) or is disabled.  The console
+  ``up_putc()`` polls TX FULL, so it works before interrupts are enabled.
+- **Line settings:** baud rate, data bits and parity are fixed in Vivado.
+  ``CONFIG_MBV_UARTLITE0_BAUD``, ``_BITS`` and ``_PARITY`` are only
+  reported by ``TCGETS``; hardware changes requested with ``TCSETS`` are
+  ignored, the TTY flags are still applied.
+- **Interrupt:** the core pulses its interrupt when the RX FIFO becomes
+  non-empty and when the TX FIFO becomes empty, with a single enable bit
+  for both.  The enable is set while the port is attached and the upper
+  half's ``rxint()``/``txint()`` state is kept in software.  The handler
+  drains the RX FIFO completely and refills the TX FIFO.  Because no
+  interrupt comes for data that is already there, enabling RX passes any
+  received data to the upper half and enabling TX starts the transfer
+  directly.
+- **AXI INTC:** the interrupt must be latched as an edge, its input
+  (``CONFIG_MBV_UARTLITE0_IRQ``) must be set in
+  ``CONFIG_MBV_INTC_EDGE_MASK`` (checked at build time).
 
 AXI EthernetLite
 ================
@@ -146,6 +175,12 @@ Option                               Default       Description
 ``CONFIG_MBV_TIMER_IRQ``             0             AXI INTC input of that timer
 ``CONFIG_MBV_TIMER_CLK_FREQ``        100000000     AXI Timer clock (``s_axi_aclk``)
 ``CONFIG_MBV_TIMER_TICK_CATCHUP``    y             Counter 1 as time reference (lost ticks)
+``CONFIG_MBV_UARTLITE0``             n             AXI UART Lite driver
+``CONFIG_MBV_UARTLITE0_BASE``        0x40600000    AXI UART Lite base address
+``CONFIG_MBV_UARTLITE0_IRQ``         1             AXI INTC input of the UART Lite (edge)
+``CONFIG_MBV_UARTLITE0_BAUD``        115200        ``C_BAUDRATE``, reported by ``TCGETS``
+``CONFIG_MBV_UARTLITE0_BITS``        8             ``C_DATA_BITS``, reported by ``TCGETS``
+``CONFIG_MBV_UARTLITE0_PARITY``      0             ``C_USE_PARITY``/``C_ODD_PARITY``
 ``CONFIG_MBV_ETHLITE``               n             AXI EthernetLite driver (``eth0``)
 ``CONFIG_MBV_ETHLITE_BASE``          0x40e00000    AXI EthernetLite base address
 ``CONFIG_MBV_ETHLITE_IRQ``           5             AXI INTC input of the EthernetLite

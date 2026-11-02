@@ -24,6 +24,10 @@ set(SRCS mbv_head.S)
 
 list(APPEND SRCS mbv_start.c mbv_irq.c mbv_irq_dispatch.c mbv_timerisr.c)
 
+if(CONFIG_MBV_UARTLITE0)
+  list(APPEND SRCS mbv_uartlite.c)
+endif()
+
 if(CONFIG_MBV_SPI0)
   list(APPEND SRCS mbv_spi.c)
 endif()
