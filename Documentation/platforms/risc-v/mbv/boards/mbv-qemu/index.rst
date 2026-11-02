@@ -19,8 +19,8 @@ LMB BRAM (128 KiB)     0x00000000    \-         Not used
 DDR (``-m``)           0x80000000    \-         Code, data, heap
 AXI INTC               0x41200000    \-         Output to MEIP
 AXI Timer #1           0x41c00000    0          System tick (counters 0, 1)
-AXI UART Lite          0x40600000    1 (edge)   Not supported
-AXI UART16550          0x44a11000    4          Console
+AXI UART Lite          0x40600000    1 (edge)   Console, see uartlite
+AXI UART16550          0x44a11000    4          Console (other configs)
 AXI EthernetLite       0x40e00000    5          ``eth0``, see netnsh
 AXI Timer #2           0x41c10000    6          Not used
 AXI Ethernet           0x40c00000    7          Not supported
@@ -46,6 +46,14 @@ nsh
 
 Flat build with the AXI UART16550 console, ``ostest``, procfs and the IRQ
 monitor (``cat /proc/irqs``).  The ISA is rv32imac/ilp32.
+
+uartlite
+--------
+
+``nsh`` with the AXI UART Lite driver (``CONFIG_MBV_UARTLITE0``) as the
+console instead of the AXI UART16550, which is disabled.  This is the
+console of the Arty A7 design.  The UART Lite is ``/dev/ttyS0``; ``cat
+/proc/irqs`` shows its interrupt as IRQ 28 (AXI INTC input 1).
 
 spiflash
 --------
@@ -127,8 +135,10 @@ which runs::
       -device loader,file=nuttx,cpu-num=0 -d unimp,guest_errors
 
 The first serial port is the AXI UART Lite and the second one the AXI
-UART16550, hence ``-serial null -serial mon:stdio``.  Exit QEMU with
-``Ctrl-a x``.
+UART16550.  The script connects the console selected in ``.config`` to
+stdio and the other port to null: ``-serial null -serial mon:stdio`` for
+the 16550, ``-serial mon:stdio -serial null`` with
+``CONFIG_MBV_UARTLITE0_SERIAL_CONSOLE``.  Exit QEMU with ``Ctrl-a x``.
 
 .. warning::
 
@@ -172,7 +182,7 @@ Real Hardware
 The address map and the AXI INTC input order above are the Vivado address
 editor defaults, so a block design that keeps them runs this configuration
 unchanged.  Otherwise update ``CONFIG_MBV_INTC_*``, ``CONFIG_MBV_TIMER_*``,
-``CONFIG_16550_UART0_*``, ``CONFIG_RAM_START``/``CONFIG_RAM_SIZE`` and the
+``CONFIG_16550_UART0_*`` or ``CONFIG_MBV_UARTLITE0_*``, ``CONFIG_RAM_START``/``CONFIG_RAM_SIZE`` and the
 board ``board.h`` to the design.  In particular:
 
 - Match ``CONFIG_MBV_ISA_*`` to the MicroBlaze V configuration.

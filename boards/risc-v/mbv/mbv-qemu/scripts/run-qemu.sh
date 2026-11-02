@@ -46,7 +46,8 @@
 # With cpu-num set, the loader also sets the PC to the ELF entry point.
 #
 # Serial ports: serial_hd(0) is the AXI UART Lite, serial_hd(1) is the
-# AXI UART16550 used as the NuttX console.
+# AXI UART16550.  The one NuttX uses as the console (from the .config) is
+# connected to stdio, the other one to null.
 
 set -e
 
@@ -64,14 +65,14 @@ fi
 # Zicsr, Zifencei and the extensions NuttX was built for, so that an
 # instruction the real core lacks traps in QEMU as well.
 
-isa_enabled()
+config_enabled()
 {
   [ -f "${CONFIG}" ] && grep -q "^CONFIG_$1=y" "${CONFIG}"
 }
 
 onoff()
 {
-  if isa_enabled "$1"; then echo true; else echo false; fi
+  if config_enabled "$1"; then echo true; else echo false; fi
 }
 
 if [ ! -f "${CONFIG}" ]; then
@@ -98,12 +99,21 @@ if [ -n "${HOSTFWD}" ]; then
   NIC="-nic user,hostfwd=${HOSTFWD}"
 fi
 
+if config_enabled MBV_UARTLITE0_SERIAL_CONSOLE; then
+  SERIAL="-serial mon:stdio -serial null"
+  CONSOLE="AXI UART Lite"
+else
+  SERIAL="-serial null -serial mon:stdio"
+  CONSOLE="AXI UART16550"
+fi
+
 CPU="rv32i,zicsr=true,zifencei=true,m=${M},a=${A},c=${C},f=${F}"
 
 echo "QEMU CPU: ${CPU}" >&2
+echo "Console: ${CONSOLE}" >&2
 
 exec ${QEMU} -M amd-microblaze-v-generic -m 256M \
   -cpu "${CPU}" -display none \
-  -serial null -serial mon:stdio \
+  ${SERIAL} \
   -device loader,file="${ELF}",cpu-num=0 ${DRIVE} ${NIC} \
   -d unimp,guest_errors ${EXTRA}

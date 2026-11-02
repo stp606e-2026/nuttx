@@ -55,6 +55,15 @@
 #  endif
 #endif
 
+#ifdef CONFIG_MBV_UARTLITE0
+#  if CONFIG_MBV_UARTLITE0_BASE != MBV_UARTLITE_BASE
+#    error "CONFIG_MBV_UARTLITE0_BASE does not match the board memory map"
+#  endif
+#  if CONFIG_MBV_UARTLITE0_IRQ != MBV_INTC_IN_UARTLITE
+#    error "CONFIG_MBV_UARTLITE0_IRQ does not match the AXI INTC wiring"
+#  endif
+#endif
+
 #ifdef CONFIG_MBV_SPI0
 #  if CONFIG_MBV_SPI0_BASE != MBV_QSPI_BASE
 #    error "CONFIG_MBV_SPI0_BASE does not match the board memory map"
@@ -150,7 +159,7 @@ static void mbv_spi_initialize(void)
  *   function called board_late_initialize().  board_late_initialize() will
  *   be called after up_initialize() and board_early_initialize() and just
  *   before the initial application is started.  This is the place to
- *   register board specific drivers (e.g. AXI GPIO, AXI UART Lite).
+ *   register board specific drivers (e.g. AXI GPIO).
  *
  ****************************************************************************/
 
