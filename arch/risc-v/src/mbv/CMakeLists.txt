@@ -28,4 +28,8 @@ if(CONFIG_MBV_SPI0)
   list(APPEND SRCS mbv_spi.c)
 endif()
 
+if(CONFIG_MBV_ETHLITE)
+  list(APPEND SRCS mbv_ethlite.c)
+endif()
+
 target_sources(arch PRIVATE ${SRCS})

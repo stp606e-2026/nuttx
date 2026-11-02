@@ -35,3 +35,7 @@ CHIP_CSRCS += mbv_timerisr.c
 ifeq ($(CONFIG_MBV_SPI0),y)
 CHIP_CSRCS += mbv_spi.c
 endif
+
+ifeq ($(CONFIG_MBV_ETHLITE),y)
+CHIP_CSRCS += mbv_ethlite.c
+endif

@@ -142,3 +142,19 @@ void riscv_serialinit(void)
   u16550_serialinit();
 #endif
 }
+
+/****************************************************************************
+ * Name: riscv_netinitialize
+ *
+ * Description:
+ *   Networking without a MAC driver (e.g. loopback only).  The AXI
+ *   EthernetLite driver provides its own riscv_netinitialize().
+ *
+ ****************************************************************************/
+
+#if defined(CONFIG_NET) && !defined(CONFIG_NETDEV_LATEINIT) && \
+    !defined(CONFIG_MBV_ETHLITE)
+void riscv_netinitialize(void)
+{
+}
+#endif

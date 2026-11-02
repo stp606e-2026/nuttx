@@ -52,7 +52,7 @@ AXI UART Lite      No
 AXI GPIO           No
 AXI Quad SPI       Yes        SPI master, standard mode, 8 bit, polled
 AXI IIC            No
-AXI EthernetLite   No
+AXI EthernetLite   Yes        ``eth0``, netdev lower half, RX/TX interrupt driven
 =================  =========  ====================================================
 
 Interrupts
@@ -96,6 +96,37 @@ more than one period (or lost) does not slow down the system time.  On
 real hardware this processes exactly one tick per interrupt.  Disable it
 if the AXI Timer has a single counter (``C_ONE_TIMER_ONLY``).
 
+AXI EthernetLite
+================
+
+``CONFIG_MBV_ETHLITE`` registers the AXI EthernetLite (PG135) as ``eth0``
+through the network device lower half (``netdev_lowerhalf.h``).  Frames
+are copied to and from the core's packet buffers with 32-bit accesses
+only.  ``ifup`` loads the MAC address into the core (TX control
+``PROGRAM | STATUS``), which then drops received unicast frames for other
+addresses.
+
+- **RX:** the core has no RX length register.  The frame length is taken
+  from the IPv4 or IPv6 header (or is fixed for ARP, or comes from the
+  802.3 length field), other frames are read in full (1514 bytes).  The
+  RX buffer is handed back to the core as soon as the frame is copied.
+- **TX:** each TX buffer holds one packet until its STATUS bit clears; the
+  TX quota is the number of TX buffers, and ``reclaim`` frees the sent
+  packets.
+- **Interrupt:** one interrupt for RX and TX done.  The handler requests
+  an RX poll and, if packets are in flight, a TX done on the low priority
+  work queue (``CONFIG_SCHED_LPWORK`` is required).
+- **Ping-pong buffers:** ``CONFIG_MBV_ETHLITE_TX_PINGPONG`` and
+  ``CONFIG_MBV_ETHLITE_RX_PINGPONG`` must match ``C_TX_PING_PONG`` and
+  ``C_RX_PING_PONG``.  QEMU's model is used without them.
+- **MDIO/PHY:** not used, the carrier is always on.  On a board the PHY
+  auto-negotiates on its own.
+
+On hardware the EthernetLite interrupt is a rising edge
+(``SENSITIVITY EDGE_RISING``), so its bit must be set in
+``CONFIG_MBV_INTC_EDGE_MASK``.  QEMU pulses a level-triggered input, which
+the default mask already handles.
+
 Kconfig Options
 ===============
 
@@ -115,6 +146,12 @@ Option                               Default       Description
 ``CONFIG_MBV_TIMER_IRQ``             0             AXI INTC input of that timer
 ``CONFIG_MBV_TIMER_CLK_FREQ``        100000000     AXI Timer clock (``s_axi_aclk``)
 ``CONFIG_MBV_TIMER_TICK_CATCHUP``    y             Counter 1 as time reference (lost ticks)
+``CONFIG_MBV_ETHLITE``               n             AXI EthernetLite driver (``eth0``)
+``CONFIG_MBV_ETHLITE_BASE``          0x40e00000    AXI EthernetLite base address
+``CONFIG_MBV_ETHLITE_IRQ``           5             AXI INTC input of the EthernetLite
+``CONFIG_MBV_ETHLITE_TX_PINGPONG``   n             ``C_TX_PING_PONG``
+``CONFIG_MBV_ETHLITE_RX_PINGPONG``   n             ``C_RX_PING_PONG``
+``CONFIG_MBV_ETHLITE_MACADDR_1/2``   00:0a:35:...  MAC address (default 00:0a:35:00:01:22)
 ===================================  ============  ==============================================
 
 The defaults are the Vivado address editor defaults, which are also used by

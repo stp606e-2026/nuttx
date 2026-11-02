@@ -169,4 +169,65 @@ endif # MBV_SPI0
 
 endmenu # AXI Quad SPI
 
+menu "AXI EthernetLite"
+
+config MBV_ETHLITE
+	bool "AXI EthernetLite"
+	default n
+	depends on NET && MM_IOB && SCHED_LPWORK
+	select ARCH_HAVE_NETDEV_STATISTICS
+	---help---
+		Enable the network driver for an AXI EthernetLite MAC (PG135),
+		registered as eth0.  RX and TX completion are interrupt driven,
+		frames are handled on the low priority work queue
+		(SCHED_LPWORK).
+		The MDIO interface is not used, the carrier is always reported
+		as present.
+
+		On hardware the EthernetLite interrupt is a rising edge: set its
+		bit in MBV_INTC_EDGE_MASK.  On QEMU the input is level triggered
+		and the default mask is correct.
+
+if MBV_ETHLITE
+
+config MBV_ETHLITE_BASE
+	hex "AXI EthernetLite base address"
+	default 0x40e00000
+
+config MBV_ETHLITE_IRQ
+	int "AXI EthernetLite AXI INTC input"
+	default 5
+	range 0 31
+
+config MBV_ETHLITE_TX_PINGPONG
+	bool "TX ping-pong buffers (C_TX_PING_PONG)"
+	default n
+	---help---
+		The core has a second TX buffer.  QEMU's model is used without
+		it.
+
+config MBV_ETHLITE_RX_PINGPONG
+	bool "RX ping-pong buffers (C_RX_PING_PONG)"
+	default n
+	---help---
+		The core has a second RX buffer.  QEMU's model is used without
+		it.
+
+config MBV_ETHLITE_MACADDR_1
+	hex "MAC address bytes 0-1"
+	default 0x000a
+	range 0x0 0xffff
+	---help---
+		First two bytes of the MAC address (00:0a is the AMD/Xilinx
+		OUI).  The address can be changed at run time with ifconfig.
+
+config MBV_ETHLITE_MACADDR_2
+	hex "MAC address bytes 2-5"
+	default 0x35000122
+	range 0x0 0xffffffff
+
+endif # MBV_ETHLITE
+
+endmenu # AXI EthernetLite
+
 endif # ARCH_CHIP_MBV
