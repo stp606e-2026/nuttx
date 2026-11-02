@@ -40,6 +40,7 @@
 
 #define MBV_INTC_IN_TIMER0      0  /* AXI Timer #1 (system tick) */
 #define MBV_INTC_IN_UARTLITE    1  /* AXI UART Lite (edge) */
+#define MBV_INTC_IN_QSPI        2  /* AXI Quad SPI (patched QEMU only) */
 #define MBV_INTC_IN_UART16550   4  /* AXI UART16550 (console) */
 #define MBV_INTC_IN_ETHLITE     5  /* AXI EthernetLite */
 #define MBV_INTC_IN_TIMER1      6  /* AXI Timer #2 */
@@ -62,6 +63,7 @@
 #define MBV_UART16550_BASE      0x44a11000 /* 0x44a10000 + 0x1000 */
 #define MBV_ETHLITE_BASE        0x40e00000
 #define MBV_TIMER1_BASE         0x41c10000
+#define MBV_QSPI_BASE           0x44a00000
 #define MBV_GPIO0_BASE          0x40000000
 #define MBV_GPIO1_BASE          0x40010000
 #define MBV_GPIO2_BASE          0x40020000

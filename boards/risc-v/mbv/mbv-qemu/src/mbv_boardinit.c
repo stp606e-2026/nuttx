@@ -31,7 +31,12 @@
 
 #include <nuttx/board.h>
 #include <nuttx/irq.h>
+#include <nuttx/fs/fs.h>
+#include <nuttx/mtd/mtd.h>
+#include <nuttx/spi/spi_transfer.h>
 #include <arch/board/board.h>
+
+#include "mbv_spi.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -49,6 +54,79 @@
 #    error "CONFIG_16550_UART0_BASE does not match the board memory map"
 #  endif
 #endif
+
+#ifdef CONFIG_MBV_SPI0
+#  if CONFIG_MBV_SPI0_BASE != MBV_QSPI_BASE
+#    error "CONFIG_MBV_SPI0_BASE does not match the board memory map"
+#  endif
+#endif
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: mbv_spi_initialize
+ *
+ * Description:
+ *   Initialize the AXI Quad SPI, register it as /dev/spi0 for the SPI tool
+ *   and bind the configuration flash on slave select 0 to the M25P MTD
+ *   driver as /dev/mtd0.  With LittleFS, mount the flash on /mnt/flash and
+ *   format it if it does not contain a file system yet.
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_MBV_SPI0
+static void mbv_spi_initialize(void)
+{
+  struct spi_dev_s *spi;
+#ifdef CONFIG_MTD_M25P
+  struct mtd_dev_s *mtd;
+#endif
+  int ret;
+
+  UNUSED(ret);
+
+  spi = mbv_spibus_initialize(0);
+  if (spi == NULL)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to initialize AXI Quad SPI\n");
+      return;
+    }
+
+#ifdef CONFIG_SPI_DRIVER
+  ret = spi_register(spi, 0);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to register /dev/spi0: %d\n", ret);
+    }
+#endif
+
+#ifdef CONFIG_MTD_M25P
+  mtd = m25p_initialize(spi);
+  if (mtd == NULL)
+    {
+      syslog(LOG_ERR, "ERROR: No M25P flash on AXI Quad SPI SS0\n");
+      return;
+    }
+
+  ret = register_mtddriver("/dev/mtd0", mtd, 0755, NULL);
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to register /dev/mtd0: %d\n", ret);
+      return;
+    }
+
+#ifdef CONFIG_FS_LITTLEFS
+  ret = nx_mount("/dev/mtd0", "/mnt/flash", "littlefs", 0, "autoformat");
+  if (ret < 0)
+    {
+      syslog(LOG_ERR, "ERROR: Failed to mount /mnt/flash: %d\n", ret);
+    }
+#endif
+#endif /* CONFIG_MTD_M25P */
+}
+#endif /* CONFIG_MBV_SPI0 */
 
 /****************************************************************************
  * Public Functions
@@ -80,6 +158,10 @@ void board_late_initialize(void)
     {
       syslog(LOG_ERR, "ERROR: Failed to mount procfs: %d\n", ret);
     }
+#endif
+
+#ifdef CONFIG_MBV_SPI0
+  mbv_spi_initialize();
 #endif
 }
 #endif

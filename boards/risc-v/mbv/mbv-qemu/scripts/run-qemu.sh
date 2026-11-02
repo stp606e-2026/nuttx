@@ -32,6 +32,11 @@
 #   QEMU   QEMU binary (default: qemu-system-riscv32)
 #   EXTRA  extra QEMU arguments, e.g. EXTRA="-s -S" to wait for GDB on
 #          localhost:1234
+#   FLASH  16 MiB raw image backing the SPI flash (N25Q128A13) on the
+#          AXI Quad SPI, created if missing.  The AXI Quad SPI is not part
+#          of the upstream machine; it needs a QEMU built with
+#          qemu-patches/ from the project repository.  Without FLASH
+#          the flash contents are not saved.
 #
 # The machine ignores -kernel, so the ELF is loaded with the generic loader.
 # With cpu-num set, the loader also sets the PC to the ELF entry point.
@@ -75,6 +80,15 @@ else
   F=$(onoff ARCH_FPU)
 fi
 
+DRIVE=
+if [ -n "${FLASH}" ]; then
+  if [ ! -f "${FLASH}" ]; then
+    dd if=/dev/zero bs=1048576 count=16 2>/dev/null | \
+      LC_ALL=C tr '\000' '\377' > "${FLASH}"
+  fi
+  DRIVE="-drive if=mtd,format=raw,file=${FLASH}"
+fi
+
 CPU="rv32i,zicsr=true,zifencei=true,m=${M},a=${A},c=${C},f=${F}"
 
 echo "QEMU CPU: ${CPU}" >&2
@@ -82,5 +96,5 @@ echo "QEMU CPU: ${CPU}" >&2
 exec ${QEMU} -M amd-microblaze-v-generic -m 256M \
   -cpu "${CPU}" -display none \
   -serial null -serial mon:stdio \
-  -device loader,file="${ELF}",cpu-num=0 \
+  -device loader,file="${ELF}",cpu-num=0 ${DRIVE} \
   -d unimp,guest_errors ${EXTRA}

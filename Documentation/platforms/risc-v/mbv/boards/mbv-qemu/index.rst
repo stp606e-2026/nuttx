@@ -29,7 +29,7 @@ AXI GPIO x3            0x40000000    \-         Not implemented by QEMU
                        0x40010000
                        0x40020000
 AXI IIC                0x40800000    \-         Not implemented by QEMU
-AXI Quad SPI           0x44a00000    \-         Not implemented by QEMU
+AXI Quad SPI           0x44a00000    2          Patched QEMU only, see spiflash
 =====================  ============  =========  ==============================
 
 The AXI UART16550 registers start at offset 0x1000 of the IP (base
@@ -46,6 +46,29 @@ nsh
 
 Flat build with the AXI UART16550 console, ``ostest``, procfs and the IRQ
 monitor (``cat /proc/irqs``).  The ISA is rv32imac/ilp32.
+
+spiflash
+--------
+
+``nsh`` plus the AXI Quad SPI driver (``CONFIG_MBV_SPI0``) with a Micron
+N25Q128A13 serial flash on slave select 0, the configuration flash of the
+Arty A7.  The flash is ``/dev/mtd0`` (``m25px`` driver) and is mounted on
+``/mnt/flash`` with LittleFS, formatted on first use.  ``/dev/spi0`` and
+the ``spi`` tool give raw access::
+
+  nsh> spi exch -x 4 9F000000
+  Sending:	9F 00 00 00
+  Received:	00 20 BA 18
+  nsh> echo hello > /mnt/flash/test.txt
+
+The upstream QEMU machine has no SPI controller at 0x44a00000.  This
+configuration needs a QEMU with the Xilinx XPS SPI model (``xlnx.xps-spi``,
+which implements the AXI Quad SPI standard mode registers) and an
+``n25q128a13`` flash added to ``amd-microblaze-v-generic``, on AXI INTC
+input 2.  Run it with a 16 MiB flash image, created if missing::
+
+  $ QEMU=/path/to/qemu-system-riscv32 FLASH=flash.img \
+      ./boards/risc-v/mbv/mbv-qemu/scripts/run-qemu.sh nuttx
 
 Building
 ========
