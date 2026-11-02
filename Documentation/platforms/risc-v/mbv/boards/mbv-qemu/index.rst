@@ -21,7 +21,7 @@ AXI INTC               0x41200000    \-         Output to MEIP
 AXI Timer #1           0x41c00000    0          System tick (counters 0, 1)
 AXI UART Lite          0x40600000    1 (edge)   Not supported
 AXI UART16550          0x44a11000    4          Console
-AXI EthernetLite       0x40e00000    5          Not supported
+AXI EthernetLite       0x40e00000    5          ``eth0``, see netnsh
 AXI Timer #2           0x41c10000    6          Not used
 AXI Ethernet           0x40c00000    7          Not supported
 AXI DMA                0x41e00000    9 / 8      Not supported (MM2S / S2MM)
@@ -69,6 +69,28 @@ input 2.  Run it with a 16 MiB flash image, created if missing::
 
   $ QEMU=/path/to/qemu-system-riscv32 FLASH=flash.img \
       ./boards/risc-v/mbv/mbv-qemu/scripts/run-qemu.sh nuttx
+
+netnsh
+------
+
+``nsh`` plus the AXI EthernetLite driver (``CONFIG_MBV_ETHLITE``) and the
+IPv4 stack with TCP, UDP and ICMP.  The address matches QEMU user
+networking: 10.0.2.15/24, gateway 10.0.2.2, DNS 10.0.2.3.  ``ping``,
+``nslookup``, ``wget`` and ``telnetd`` (port 23) are included::
+
+  nsh> ping -c 3 10.0.2.2
+  56 bytes from 10.0.2.2: icmp_seq=0 time=10.0 ms
+  ...
+  nsh> nslookup example.com
+
+The upstream QEMU machine connects the EthernetLite to user networking
+without any option.  To reach telnetd from the host, forward a port::
+
+  $ HOSTFWD="tcp:127.0.0.1:2323-:23" \
+      ./boards/risc-v/mbv/mbv-qemu/scripts/run-qemu.sh nuttx
+  $ telnet 127.0.0.1 2323
+
+QEMU then warns that the AXI Ethernet NIC has no peer; it is not used.
 
 Building
 ========

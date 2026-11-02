@@ -37,6 +37,10 @@
 #          of the upstream machine; it needs a QEMU built with
 #          qemu-patches/ from the project repository.  Without FLASH
 #          the flash contents are not saved.
+#   HOSTFWD  user networking port forwards for the AXI EthernetLite, e.g.
+#          HOSTFWD="tcp:127.0.0.1:2323-:23" to reach telnetd on localhost
+#          port 2323.  Without it QEMU still connects the EthernetLite to
+#          user networking (10.0.2.0/24, gateway 10.0.2.2).
 #
 # The machine ignores -kernel, so the ELF is loaded with the generic loader.
 # With cpu-num set, the loader also sets the PC to the ELF entry point.
@@ -89,6 +93,11 @@ if [ -n "${FLASH}" ]; then
   DRIVE="-drive if=mtd,format=raw,file=${FLASH}"
 fi
 
+NIC=
+if [ -n "${HOSTFWD}" ]; then
+  NIC="-nic user,hostfwd=${HOSTFWD}"
+fi
+
 CPU="rv32i,zicsr=true,zifencei=true,m=${M},a=${A},c=${C},f=${F}"
 
 echo "QEMU CPU: ${CPU}" >&2
@@ -96,5 +105,5 @@ echo "QEMU CPU: ${CPU}" >&2
 exec ${QEMU} -M amd-microblaze-v-generic -m 256M \
   -cpu "${CPU}" -display none \
   -serial null -serial mon:stdio \
-  -device loader,file="${ELF}",cpu-num=0 ${DRIVE} \
+  -device loader,file="${ELF}",cpu-num=0 ${DRIVE} ${NIC} \
   -d unimp,guest_errors ${EXTRA}

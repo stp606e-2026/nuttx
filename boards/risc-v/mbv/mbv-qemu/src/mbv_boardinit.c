@@ -61,6 +61,15 @@
 #  endif
 #endif
 
+#ifdef CONFIG_MBV_ETHLITE
+#  if CONFIG_MBV_ETHLITE_BASE != MBV_ETHLITE_BASE
+#    error "CONFIG_MBV_ETHLITE_BASE does not match the board memory map"
+#  endif
+#  if CONFIG_MBV_ETHLITE_IRQ != MBV_INTC_IN_ETHLITE
+#    error "CONFIG_MBV_ETHLITE_IRQ does not match the AXI INTC wiring"
+#  endif
+#endif
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
