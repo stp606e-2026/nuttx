@@ -50,7 +50,7 @@ AXI Timer (PG079)  Yes        Counter 0: tick IRQ, counter 1: time reference
 AXI UART16550      Yes        Generic ``drivers/serial/uart_16550.c``
 AXI UART Lite      No
 AXI GPIO           No
-AXI Quad SPI       No
+AXI Quad SPI       Yes        SPI master, standard mode, 8 bit, polled
 AXI IIC            No
 AXI EthernetLite   No
 =================  =========  ====================================================

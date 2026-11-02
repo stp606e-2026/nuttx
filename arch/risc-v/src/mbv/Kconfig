@@ -124,4 +124,49 @@ config MBV_TIMER_TICK_CATCHUP
 
 endmenu # AXI Timer (system tick)
 
+menu "AXI Quad SPI"
+
+config MBV_SPI0
+	bool "AXI Quad SPI 0"
+	default n
+	select SPI
+	---help---
+		Enable the SPI master driver for an AXI Quad SPI (PG153) in
+		standard SPI mode with 8 bit transfers (C_SPI_MODE = 0,
+		C_NUM_TRANSFER_BITS = 8, XIP disabled).  The driver is polled.
+
+if MBV_SPI0
+
+config MBV_SPI0_BASE
+	hex "AXI Quad SPI 0 base address"
+	default 0x44a00000
+
+config MBV_SPI0_NSS
+	int "Number of slave select lines"
+	default 1
+	range 1 32
+	---help---
+		Number of slave select outputs (C_NUM_SS_BITS).  SPI device ID
+		index n (SPIDEVID_INDEX()) drives slave select output n.
+
+config MBV_SPI0_FIFO_DEPTH
+	int "FIFO depth"
+	default 16
+	range 1 256
+	---help---
+		Depth of the TX and RX FIFOs (C_FIFO_DEPTH, 16 or 256).  Use 1 if
+		the core was generated without FIFOs.
+
+config MBV_SPI0_SCK_FREQUENCY
+	int "SCK frequency (Hz)"
+	default 12500000
+	---help---
+		The AXI Quad SPI clock is fixed in hardware to
+		ext_spi_clk / C_SCK_RATIO and cannot be changed by software.
+		SPI_SETFREQUENCY() returns this value.
+
+endif # MBV_SPI0
+
+endmenu # AXI Quad SPI
+
 endif # ARCH_CHIP_MBV
