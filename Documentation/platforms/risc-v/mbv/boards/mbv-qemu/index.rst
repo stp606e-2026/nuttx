@@ -100,6 +100,23 @@ without any option.  To reach telnetd from the host, forward a port::
 
 QEMU then warns that the AXI Ethernet NIC has no peer; it is not used.
 
+full
+----
+
+The peripherals of the Arty A7 design together: the ``uartlite`` console,
+the ``netnsh`` network stack with ``telnetd`` and the ``spiflash`` SPI flash
+with LittleFS on ``/mnt/flash``.  ``cat /proc/irqs`` shows the UART Lite as
+IRQ 28 and the EthernetLite as IRQ 32.  Like ``spiflash``, it needs a QEMU
+with the AXI Quad SPI model::
+
+  $ QEMU=/path/to/qemu-system-riscv32 FLASH=flash.img \
+      HOSTFWD="tcp:127.0.0.1:2323-:23" \
+      ./boards/risc-v/mbv/mbv-qemu/scripts/run-qemu.sh nuttx
+  $ telnet 127.0.0.1 2323
+
+The serial console and the telnet session are two independent NSH
+sessions, and files written to ``/mnt/flash`` are kept in ``flash.img``.
+
 Building
 ========
 
