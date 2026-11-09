@@ -24,7 +24,8 @@
 
 /* The whole image (code, data, bss, idle stack and heap) lives in one
  * region, selected by CONFIG_RAM_START.  Its size is CONFIG_RAM_SIZE, the
- * only place to change when the BRAM grows (e.g. 64 KiB -> 256 KiB).
+ * only place to change when the BRAM size changes (64 KiB in bitstream
+ * v0.1, 256 KiB in v0.2).
  *
  *   0x00000000  LMB BRAM: the image can be embedded in the bitstream with
  *               updatemem and runs from the reset vector (entry 0x0)

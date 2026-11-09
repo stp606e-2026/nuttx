@@ -59,8 +59,10 @@ spiflash
 --------
 
 ``nsh`` plus the AXI Quad SPI driver (``CONFIG_MBV_SPI0``) with a Micron
-N25Q128A13 serial flash on slave select 0, the configuration flash of the
-Arty A7.  The flash is ``/dev/mtd0`` (``m25px`` driver) and is mounted on
+N25Q128A13 serial flash on slave select 0, a configuration flash like the
+Arty A7's (the Arty A7 design itself connects its Quad SPI to a microSD
+card instead, see :doc:`../mbv-arty/index`).  The flash is ``/dev/mtd0``
+(``m25px`` driver) and is mounted on
 ``/mnt/flash`` with LittleFS, formatted on first use.  ``/dev/spi0`` and
 the ``spi`` tool give raw access::
 

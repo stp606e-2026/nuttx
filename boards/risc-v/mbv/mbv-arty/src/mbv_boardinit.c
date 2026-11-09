@@ -27,14 +27,13 @@
 #include <nuttx/config.h>
 
 #include <sys/mount.h>
-#include <sys/types.h>
 #include <syslog.h>
 
 #include <nuttx/board.h>
 #include <nuttx/irq.h>
 #include <nuttx/fs/fs.h>
-#include <nuttx/fs/ioctl.h>
-#include <nuttx/mtd/mtd.h>
+#include <nuttx/mmcsd.h>
+#include <nuttx/spi/spi.h>
 #include <nuttx/spi/spi_transfer.h>
 #include <arch/board/board.h>
 
@@ -49,8 +48,8 @@
  */
 
 #if CONFIG_RAM_START == MBV_BRAM_BASE
-#  if CONFIG_RAM_SIZE > 0x40000000
-#    error "CONFIG_RAM_SIZE is larger than the LMB BRAM address space"
+#  if CONFIG_RAM_SIZE > MBV_BRAM_SIZE
+#    error "CONFIG_RAM_SIZE is larger than the LMB BRAM"
 #  endif
 #elif CONFIG_RAM_START == MBV_DDR_BASE
 #  if CONFIG_RAM_SIZE > MBV_DDR_SIZE
@@ -75,9 +74,19 @@
 #  endif
 #endif
 
+#if CONFIG_MBV_INTC_NIRQS != MBV_INTC_NINPUTS
+#  error "CONFIG_MBV_INTC_NIRQS does not match the AXI INTC of the design"
+#endif
+
 #ifdef CONFIG_MBV_SPI0
 #  if CONFIG_MBV_SPI0_BASE != MBV_QSPI_BASE
 #    error "CONFIG_MBV_SPI0_BASE does not match the board memory map"
+#  endif
+#  if CONFIG_MBV_SPI0_FIFO_DEPTH != MBV_QSPI_FIFO_DEPTH
+#    error "CONFIG_MBV_SPI0_FIFO_DEPTH does not match C_FIFO_DEPTH"
+#  endif
+#  if CONFIG_MBV_SPI0_SCK_FREQUENCY != MBV_QSPI_SCK_FREQUENCY
+#    error "CONFIG_MBV_SPI0_SCK_FREQUENCY does not match the fixed SCK"
 #  endif
 #endif
 
@@ -86,84 +95,70 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name: mbv_flash_initialize
+ * Name: mbv_sd_initialize
  *
  * Description:
- *   Bind the configuration flash on AXI Quad SPI slave select 0 to the
- *   M25P MTD driver.  The bitstream sits at the start of the flash, so
- *   only the partition from CONFIG_MBV_ARTY_FLASH_FS_OFFSET to the end is
- *   registered, as /dev/mtd0.  With LittleFS, mount it on /mnt/flash and
- *   format it if it does not contain a file system yet.
+ *   Bind the SD card on AXI Quad SPI slave select 0 (HW-125 module on
+ *   Pmod JA) to the MMC/SD SPI driver as /dev/mmcsd0 and, with FAT, mount
+ *   it on CONFIG_MBV_ARTY_SD_MOUNTPOINT.
  *
  ****************************************************************************/
 
-#ifdef CONFIG_MTD_M25P
-static void mbv_flash_initialize(struct spi_dev_s *spi)
+#ifdef CONFIG_MMCSD_SPI
+static void mbv_sd_initialize(struct spi_dev_s *spi)
 {
-  struct mtd_geometry_s geo;
-  struct mtd_dev_s *flash;
-  struct mtd_dev_s *part;
-  off_t firstblock;
-  off_t nblocks;
   int ret;
+  int i;
 
-  flash = m25p_initialize(spi);
-  if (flash == NULL)
+  /* An SD card needs at least 74 clocks after power-up.  The MMC/SD driver
+   * sends them with chip select deasserted, but the AXI Quad SPI does not
+   * clock SCK while every slave select output is inactive (seen on the
+   * board).  Send them with the card selected first; it ignores clocks
+   * without a command.
+   */
+
+  SPI_LOCK(spi, true);
+  SPI_SETMODE(spi, SPIDEV_MODE0);
+  SPI_SETBITS(spi, 8);
+  SPI_SELECT(spi, SPIDEV_MMCSD(0), true);
+  for (i = 0; i < 10; i++)
     {
-      syslog(LOG_ERR, "ERROR: No M25P flash on AXI Quad SPI SS0\n");
-      return;
+      SPI_SEND(spi, 0xff);
     }
 
-  ret = MTD_IOCTL(flash, MTDIOC_GEOMETRY, (unsigned long)&geo);
+  SPI_SELECT(spi, SPIDEV_MMCSD(0), false);
+  SPI_LOCK(spi, false);
+
+  ret = mmcsd_spislotinitialize(0, 0, spi);
   if (ret < 0)
     {
-      syslog(LOG_ERR, "ERROR: Flash geometry: %d\n", ret);
+      syslog(LOG_ERR, "ERROR: Failed to bind the SD card: %d\n", ret);
       return;
     }
 
-  if (CONFIG_MBV_ARTY_FLASH_FS_OFFSET % geo.erasesize != 0 ||
-      CONFIG_MBV_ARTY_FLASH_FS_OFFSET >=
-      (uint64_t)geo.erasesize * geo.neraseblocks)
-    {
-      syslog(LOG_ERR, "ERROR: Bad file system offset 0x%x\n",
-             CONFIG_MBV_ARTY_FLASH_FS_OFFSET);
-      return;
-    }
-
-  firstblock = CONFIG_MBV_ARTY_FLASH_FS_OFFSET / geo.blocksize;
-  nblocks    = (off_t)geo.erasesize / geo.blocksize * geo.neraseblocks -
-               firstblock;
-
-  part = mtd_partition(flash, firstblock, nblocks);
-  if (part == NULL)
-    {
-      syslog(LOG_ERR, "ERROR: Failed to create the flash partition\n");
-      return;
-    }
-
-  ret = register_mtddriver("/dev/mtd0", part, 0755, NULL);
+#ifdef CONFIG_FS_FAT
+  ret = nx_mount("/dev/mmcsd0", CONFIG_MBV_ARTY_SD_MOUNTPOINT, "vfat", 0,
+                 NULL);
   if (ret < 0)
     {
-      syslog(LOG_ERR, "ERROR: Failed to register /dev/mtd0: %d\n", ret);
-      return;
+      syslog(LOG_ERR, "ERROR: Failed to mount the SD card on %s: %d\n",
+             CONFIG_MBV_ARTY_SD_MOUNTPOINT, ret);
     }
-
-#ifdef CONFIG_FS_LITTLEFS
-  ret = nx_mount("/dev/mtd0", "/mnt/flash", "littlefs", 0, "autoformat");
-  if (ret < 0)
+  else
     {
-      syslog(LOG_ERR, "ERROR: Failed to mount /mnt/flash: %d\n", ret);
+      syslog(LOG_INFO, "SD card mounted on %s\n",
+             CONFIG_MBV_ARTY_SD_MOUNTPOINT);
     }
 #endif
 }
-#endif /* CONFIG_MTD_M25P */
+#endif /* CONFIG_MMCSD_SPI */
 
 /****************************************************************************
  * Name: mbv_spi_initialize
  *
  * Description:
  *   Initialize the AXI Quad SPI, optionally register it as /dev/spi0 for
- *   the SPI tool, and set up the configuration flash.
+ *   the SPI tool, and set up the SD card.
  *
  ****************************************************************************/
 
@@ -190,8 +185,8 @@ static void mbv_spi_initialize(void)
     }
 #endif
 
-#ifdef CONFIG_MTD_M25P
-  mbv_flash_initialize(spi);
+#ifdef CONFIG_MMCSD_SPI
+  mbv_sd_initialize(spi);
 #endif
 }
 #endif /* CONFIG_MBV_SPI0 */

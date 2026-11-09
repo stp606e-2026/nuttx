@@ -33,23 +33,22 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Memory map of the soc_bd design (Vivado Address Editor).  The image is
- * linked to CONFIG_RAM_START: the LMB BRAM to be embedded in the bitstream
- * or the DDR to be loaded over JTAG.
+/* Memory map of the soc_bd design, bitstream v0.2.  The image is linked to
+ * CONFIG_RAM_START: the 256 KiB LMB BRAM to be embedded in the bitstream or
+ * the DDR to be loaded over JTAG.
  */
 
 #define MBV_BRAM_BASE           0x00000000
+#define MBV_BRAM_SIZE           (256 * 1024)
 #define MBV_DDR_BASE            0x80000000
 #define MBV_DDR_SIZE            (256 * 1024 * 1024)
 
-/* AXI INTC inputs (xlconcat order).  Only the timer input is verified
- * against the design so far, the others match the QEMU arty-a7-mbv
- * machine.
- */
+/* AXI INTC inputs, in the order of the xlconcat of the block design */
 
+#define MBV_INTC_NINPUTS        3
 #define MBV_INTC_IN_TIMER0      0  /* AXI Timer (system tick) */
-#define MBV_INTC_IN_UARTLITE    1  /* AXI UART Lite (edge), unverified */
-#define MBV_INTC_IN_QSPI        2  /* AXI Quad SPI, unverified */
+#define MBV_INTC_IN_UARTLITE    1  /* AXI UART Lite */
+#define MBV_INTC_IN_QSPI        2  /* AXI Quad SPI (SD card) */
 
 /* NuttX IRQ numbers of the AXI INTC inputs above (MBV_IRQ_INTC() comes
  * from <arch/irq.h>)
@@ -62,5 +61,12 @@
 
 #define MBV_UARTLITE_BASE       0x40600000
 #define MBV_QSPI_BASE           0x44a00000
+
+/* AXI Quad SPI: the SD card (HW-125 module on Pmod JA) is on slave select
+ * 0.  SCK is fixed in hardware to ext_spi_clk (5 MHz) / C_SCK_RATIO (16).
+ */
+
+#define MBV_QSPI_FIFO_DEPTH     256
+#define MBV_QSPI_SCK_FREQUENCY  312500
 
 #endif /* __BOARDS_RISCV_MBV_MBV_ARTY_INCLUDE_BOARD_H */
