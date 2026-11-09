@@ -82,6 +82,22 @@ config MBV_INTC_HAS_SIE_CIE
 		If disabled, IER is updated with a read-modify-write sequence
 		inside a critical section.
 
+config MBV_INTC_HAS_FAST
+	bool "AXI INTC has fast interrupt logic (C_HAS_FAST)"
+	default n
+	---help---
+		Enable if the AXI INTC was generated with fast interrupt logic
+		and drives the MicroBlaze V Interrupt_Address port, i.e. the
+		MicroBlaze V uses fast interrupts (C_USE_INTERRUPT = 2).  The
+		CPU then jumps to Interrupt_Address instead of mtvec for every
+		external interrupt.  Interrupt_Address is the IVAR of the active
+		input, also for inputs in normal mode, and IVAR resets to
+		C_IVAR_RESET_VALUE (0x10, the classic MicroBlaze vector).
+
+		All inputs are put in normal mode (IMR = 0) and their IVAR is set
+		to mtvec, so external interrupts reach the common trap handler as
+		with standard interrupts.
+
 endmenu # AXI Interrupt Controller
 
 menu "AXI Timer (system tick)"

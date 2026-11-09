@@ -92,6 +92,21 @@ void up_irqinitialize(void)
   putreg32(0, MBV_INTC_IER);
   putreg32(MBV_INTC_ALL, MBV_INTC_IAR);
 
+#ifdef CONFIG_MBV_INTC_HAS_FAST
+  /* With fast interrupts the CPU jumps to the IVAR of the active input
+   * instead of mtvec, also for inputs in normal mode.  Keep every input in
+   * normal mode and point its IVAR at the trap vector.  IVAR must only be
+   * changed while the input is disabled (PG099).
+   */
+
+  putreg32(0, MBV_INTC_IMR);
+
+  for (int i = 0; i < CONFIG_MBV_INTC_NIRQS; i++)
+    {
+      putreg32(READ_CSR(CSR_MTVEC) & ~UINT32_C(3), MBV_INTC_IVAR(i));
+    }
+#endif
+
   /* Enable the AXI INTC output (ME) and hardware interrupts (HIE).  Once
    * HIE is set, ISR can no longer be written by software and HIE cannot be
    * cleared again until the next reset.

@@ -46,6 +46,10 @@
 #define AXI_INTC_IMR_OFFSET   0x20  /* Interrupt Mode Register */
 #define AXI_INTC_ILR_OFFSET   0x24  /* Interrupt Level Register */
 
+/* Interrupt Vector Address Registers (C_HAS_FAST), one per input */
+
+#define AXI_INTC_IVAR_OFFSET(n) (0x100 + 4 * (n))
+
 /* AXI Interrupt Controller register addresses */
 
 #define MBV_INTC_ISR          (MBV_INTC_BASE + AXI_INTC_ISR_OFFSET)
@@ -58,6 +62,7 @@
 #define MBV_INTC_MER          (MBV_INTC_BASE + AXI_INTC_MER_OFFSET)
 #define MBV_INTC_IMR          (MBV_INTC_BASE + AXI_INTC_IMR_OFFSET)
 #define MBV_INTC_ILR          (MBV_INTC_BASE + AXI_INTC_ILR_OFFSET)
+#define MBV_INTC_IVAR(n)      (MBV_INTC_BASE + AXI_INTC_IVAR_OFFSET(n))
 
 /* Master Enable Register (MER) */
 

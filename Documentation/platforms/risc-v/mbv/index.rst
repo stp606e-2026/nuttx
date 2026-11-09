@@ -171,6 +171,7 @@ Option                               Default       Description
 ``CONFIG_MBV_INTC_EDGE_MASK``        0x00000002    Edge-triggered inputs (``C_KIND_OF_INTR``)
 ``CONFIG_MBV_INTC_HAS_IVR``          y             ``C_HAS_IVR``; otherwise IPR is scanned
 ``CONFIG_MBV_INTC_HAS_SIE_CIE``      y             ``C_HAS_SIE``/``C_HAS_CIE``; otherwise IER RMW
+``CONFIG_MBV_INTC_HAS_FAST``         n             ``C_HAS_FAST``; IVAR of every input = mtvec
 ``CONFIG_MBV_TIMER_BASE``            0x41c00000    AXI Timer used for the tick
 ``CONFIG_MBV_TIMER_IRQ``             0             AXI INTC input of that timer
 ``CONFIG_MBV_TIMER_CLK_FREQ``        100000000     AXI Timer clock (``s_axi_aclk``)
