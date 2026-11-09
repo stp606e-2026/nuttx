@@ -269,10 +269,21 @@ static void mbv_spi_setbits(struct spi_dev_s *dev, int nbits)
 
 /****************************************************************************
  * Name: mbv_spi_status
+ *
+ * Description:
+ *   The AXI Quad SPI has no card detect or write protect inputs.  Report an
+ *   MMC/SD card as present so that the MMC/SD driver probes it; if there is
+ *   no card, it gets no answer to CMD0 and reports no media.
+ *
  ****************************************************************************/
 
 static uint8_t mbv_spi_status(struct spi_dev_s *dev, uint32_t devid)
 {
+  if (SPIDEVID_TYPE(devid) == SPIDEVTYPE_MMCSD)
+    {
+      return SPI_STATUS_PRESENT;
+    }
+
   return 0;
 }
 
