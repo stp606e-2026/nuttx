@@ -50,6 +50,14 @@
 #define MBV_INTC_IN_UARTLITE    1  /* AXI UART Lite */
 #define MBV_INTC_IN_QSPI        2  /* AXI Quad SPI (SD card) */
 
+/* Edge-triggered AXI INTC inputs (C_KIND_OF_INTR = 0xfffffffe in the
+ * hardware handoff): the UART Lite and Quad SPI interrupts are rising
+ * edges, the AXI Timer interrupt is level high.
+ */
+
+#define MBV_INTC_EDGE_INPUTS    ((1 << MBV_INTC_IN_UARTLITE) | \
+                                 (1 << MBV_INTC_IN_QSPI))
+
 /* NuttX IRQ numbers of the AXI INTC inputs above (MBV_IRQ_INTC() comes
  * from <arch/irq.h>)
  */

@@ -78,6 +78,18 @@
 #  error "CONFIG_MBV_INTC_NIRQS does not match the AXI INTC of the design"
 #endif
 
+#if CONFIG_MBV_INTC_EDGE_MASK != MBV_INTC_EDGE_INPUTS
+#  error "CONFIG_MBV_INTC_EDGE_MASK does not match C_KIND_OF_INTR"
+#endif
+
+/* The MicroBlaze V uses fast interrupts (C_USE_INTERRUPT = 2): without the
+ * IVAR setup every external interrupt jumps to 0x10.
+ */
+
+#ifndef CONFIG_MBV_INTC_HAS_FAST
+#  error "The design uses fast interrupts, enable CONFIG_MBV_INTC_HAS_FAST"
+#endif
+
 #ifdef CONFIG_MBV_SPI0
 #  if CONFIG_MBV_SPI0_BASE != MBV_QSPI_BASE
 #    error "CONFIG_MBV_SPI0_BASE does not match the board memory map"

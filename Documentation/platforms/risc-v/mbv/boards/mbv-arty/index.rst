@@ -22,16 +22,31 @@ LMB BRAM (256 KiB)     0x00000000    \-         Image of ``nsh``, ``sdcard``
 DDR3L (256 MiB)        0x80000000    \-         Image of ``nsh-ddr``
 AXI UART Lite          0x40600000    1 (edge)   Console, ``/dev/ttyS0``
 AXI INTC (3 inputs)    0x41200000    \-         Output to MEIP
-AXI Timer              0x41c00000    0          System tick
-AXI Quad SPI           0x44a00000    2          SD card, ``/dev/mmcsd0``
+AXI Timer              0x41c00000    0 (level)  System tick
+AXI Quad SPI           0x44a00000    2 (edge)   SD card, ``/dev/mmcsd0``
 =====================  ============  =========  ==============================
 
 The INTC inputs, the Quad SPI settings (standard mode, 256 byte FIFOs, SCK
 fixed to 5 MHz / 16 = 312.5 kHz) and the clocks come from the block design.
-The INTC edge mask (``CONFIG_MBV_INTC_EDGE_MASK``, UART Lite only) and
-``C_HAS_IVR`` are IP defaults that still have to be read from the hardware
-handoff (``.hwh``).  The board checks at build time that the UART Lite,
-Quad SPI and INTC Kconfig values match ``include/board.h``.
+The hardware handoff (``soc_bd.hwh`` in the XSA) gives the rest: the UART
+Lite and Quad SPI interrupts are rising edges and the AXI Timer interrupt is
+level (``C_KIND_OF_INTR = 0xfffffffe``, so ``CONFIG_MBV_INTC_EDGE_MASK`` is
+``0x6``), and the INTC has IVR, SIE and CIE.  The board checks at build time
+that the UART Lite, Quad SPI and INTC Kconfig values match
+``include/board.h``.
+
+The MicroBlaze V uses fast interrupts (``C_USE_INTERRUPT = 2``, INTC
+``C_HAS_FAST = 1``): for every external interrupt the CPU jumps to the
+INTC's ``Interrupt_Address``, the IVAR of the active input, instead of
+``mtvec``, also for inputs in normal mode.  IVAR resets to 0x10, which is in
+the middle of the startup code, so an image that does not program IVAR
+restarts on its first external interrupt.  ``CONFIG_MBV_INTC_HAS_FAST`` is
+required: ``up_irqinitialize()`` keeps all inputs in normal mode and sets
+their IVAR to ``mtvec``, as the AMD INTC driver does.
+
+The CPU also traps on misaligned loads and stores
+(``C_MISALIGNED_EXCEPTIONS = 1``) and has the ``cycle``, ``time`` (100 MHz)
+and ``instret`` counters.  The ``arty-a7-mbv`` QEMU machine models all three.
 
 The image is linked to ``CONFIG_RAM_START`` (the LMB BRAM or the DDR) with
 size ``CONFIG_RAM_SIZE``; code, data, the idle stack and the heap all live
