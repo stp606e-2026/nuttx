@@ -44,6 +44,24 @@
 
 __start:
 
+  /* MicroBlaze V vector table at C_BASE_VECTORS: reset at +0x0, traps at
+   * +0x4 (the reset value of mtvec), non-maskable interrupt at +0x8 and
+   * non-maskable exception at +0xc.  mtvec is set to __trap_vec below,
+   * but a trap taken before that or a non-maskable event would otherwise
+   * land in the middle of this code when the image starts at
+   * C_BASE_VECTORS (LMB BRAM boot).  The entries must be 4 bytes apart.
+   */
+
+  .option push
+  .option norvc
+  j     __mbv_reset         /* +0x0: reset */
+  j     __trap_vec          /* +0x4: trap before mtvec is set */
+  j     __trap_vec          /* +0x8: non-maskable interrupt */
+  j     __trap_vec          /* +0xc: non-maskable exception */
+  .option pop
+
+__mbv_reset:
+
   /* The core starts in M-mode.  Make sure that all interrupts are
    * disabled until up_irqinitialize() has set up the AXI INTC.
    */
