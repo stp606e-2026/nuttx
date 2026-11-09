@@ -1,0 +1,18 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_BOARD_MBV_ARTY
+
+config MBV_ARTY_FLASH_FS_OFFSET
+	hex "File system offset in the configuration flash"
+	default 0x400000
+	depends on MBV_SPI0 && MTD_M25P
+	---help---
+		The Quad SPI flash also holds the bitstream (about 3.8 MB for the
+		xc7a100t), starting at offset 0.  Only the part of the flash from
+		this offset to the end is registered as /dev/mtd0 and used for the
+		file system.  It must be a multiple of the flash erase block size.
+
+endif # ARCH_BOARD_MBV_ARTY

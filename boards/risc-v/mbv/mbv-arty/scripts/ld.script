@@ -1,0 +1,158 @@
+/****************************************************************************
+ * boards/risc-v/mbv/mbv-arty/scripts/ld.script
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.  The
+ * ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ ****************************************************************************/
+
+#include <nuttx/config.h>
+
+/* The whole image (code, data, bss, idle stack and heap) lives in one
+ * region, selected by CONFIG_RAM_START.  Its size is CONFIG_RAM_SIZE, the
+ * only place to change when the BRAM grows (e.g. 64 KiB -> 256 KiB).
+ *
+ *   0x00000000  LMB BRAM: the image can be embedded in the bitstream with
+ *               updatemem and runs from the reset vector (entry 0x0)
+ *   0x80000000  DDR3L: loaded over JTAG (or by a bootloader)
+ *
+ * .data is not copied from a load address: the bitstream or the loader
+ * initializes it, so a reset without reloading the image keeps the
+ * values of the previous run.
+ */
+
+#if CONFIG_RAM_START == 0x00000000
+#  define IMAGE bram
+#elif CONFIG_RAM_START == 0x80000000
+#  define IMAGE ddr
+#else
+#  error "CONFIG_RAM_START must be the LMB BRAM (0x0) or DDR (0x80000000)"
+#endif
+
+MEMORY
+{
+  IMAGE (rwx) : ORIGIN = CONFIG_RAM_START, LENGTH = CONFIG_RAM_SIZE
+}
+
+OUTPUT_ARCH("riscv")
+
+ENTRY(__start)
+
+SECTIONS
+{
+  .text :
+    {
+      _stext = . ;
+      *(.text)
+      *(.text.*)
+      *(.gnu.warning)
+      *(.stub)
+      *(.glue_7)
+      *(.glue_7t)
+      *(.jcr)
+
+      /* C++ support:  The .init and .fini sections contain specific logic
+       * to manage static constructors and destructors.
+       */
+
+      *(.gnu.linkonce.t.*)
+      *(.init)             /* Old ABI */
+      *(.fini)             /* Old ABI */
+      _etext = . ;
+    } > IMAGE
+
+  .init_section :
+    {
+      _sinit = ABSOLUTE(.);
+      KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
+      KEEP(*(.init_array .ctors))
+      _einit = ABSOLUTE(.);
+    } > IMAGE
+
+  .rodata :
+    {
+      _srodata = . ;
+      *(.rodata)
+      *(.rodata1)
+      *(.rodata.*)
+      *(.gnu.linkonce.r*)
+      _erodata = . ;
+    } > IMAGE
+
+  .tdata :
+    {
+      _stdata = ABSOLUTE(.);
+      *(.tdata .tdata.* .gnu.linkonce.td.*);
+      _etdata = ABSOLUTE(.);
+    } > IMAGE
+
+  .tbss :
+    {
+      _stbss = ABSOLUTE(.);
+      *(.tbss .tbss.* .gnu.linkonce.tb.* .tcommon);
+      _etbss = ABSOLUTE(.);
+    } > IMAGE
+
+  _eronly = ABSOLUTE(.);
+
+  .data :
+    {
+      _sdata = . ;
+      *(.data)
+      *(.data1)
+      *(.data.*)
+      *(.gnu.linkonce.d*)
+      . = ALIGN(4);
+      _edata = . ;
+    } > IMAGE
+
+  .bss :
+    {
+      _sbss = . ;
+      *(.bss)
+      *(.bss.*)
+      *(.sbss)
+      *(.sbss.*)
+      *(.gnu.linkonce.b*)
+      *(COMMON)
+      . = ALIGN(32);
+      _ebss = . ;
+    } > IMAGE
+
+  /* Stabs debugging sections.    */
+
+  .stab 0 : { *(.stab) }
+  .stabstr 0 : { *(.stabstr) }
+  .stab.excl 0 : { *(.stab.excl) }
+  .stab.exclstr 0 : { *(.stab.exclstr) }
+  .stab.index 0 : { *(.stab.index) }
+  .stab.indexstr 0 : { *(.stab.indexstr) }
+  .comment 0 : { *(.comment) }
+  .debug_abbrev 0 : { *(.debug_abbrev) }
+  .debug_info 0 : { *(.debug_info) }
+  .debug_line 0 : { *(.debug_line) }
+  .debug_pubnames 0 : { *(.debug_pubnames) }
+  .debug_aranges 0 : { *(.debug_aranges) }
+}
+
+/* The core resets to the start of the LMB BRAM: __start (mbv_head.S, the
+ * first object linked) must be there.
+ */
+
+#if CONFIG_RAM_START == 0x00000000
+ASSERT(__start == ORIGIN(IMAGE), "__start is not at the reset vector (0x0)")
+#endif
